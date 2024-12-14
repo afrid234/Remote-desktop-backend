@@ -7,9 +7,33 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+require('dotenv').config(); // For environment variables
+
+const isValidToken = (token) => {
+    const validTokens = process.env.TOKEN; // Replace with your valid tokens
+    return validTokens.includes(token);
+};
+
 // Serve a basic route
 app.get('/', (req, res) => {
   res.send('WebRTC Signaling Server is running with room support.');
+});
+
+io.use((socket, next) => {
+    const token = socket.handshake.auth?.token;
+
+    if (!token) {
+        console.error('Connection rejected: No token provided');
+        return next(new Error('Authentication error: No token provided'));
+    }
+
+    if (!isValidToken(token)) {
+        console.error('Connection rejected: Invalid token');
+        return next(new Error('Authentication error: Invalid token'));
+    }
+
+    console.log('Authentication successful for token:', token);
+    next();
 });
 
 // Handle WebRTC signaling with room-based logic
@@ -41,11 +65,9 @@ io.on('connection', (socket) => {
 
   // Handle receiving the H.264 encoded frame
   socket.on('frame', (data) => {
-    console.log('Received H.264 frame, size:', data.length);
+    console.log('Received , size:', data);
 
-    // Optionally, save the frame for debugging
-    fs.appendFileSync('frames.h264', data);  // Save the frame to a file for testing
-
+  
     // Broadcast to other clients in the room
     socket.to(socket.roomId).emit('frame', data);
   });
