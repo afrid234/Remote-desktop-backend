@@ -51,6 +51,13 @@ io.on('connection', (socket) => {
 
   });
 
+
+      socket.on('destroy', () => {
+     
+        // Broadcast to other clients in the room
+        socket.to(socket.roomId).emit('destroy', "Destroy");
+    });
+
   // Relay signaling messages within the room
   socket.on('offer', (data) => {
     console.log('Offer received:', data);
